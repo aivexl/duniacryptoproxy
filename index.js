@@ -1,19 +1,10 @@
-import express from 'express';
-import fetch from 'node-fetch';
-import cors from 'cors';
+// ... existing code ...
 
-const app = express();
-app.use(cors());
-
-const cache = {}; // { [url]: { status, contentType, body, timestamp } }
-const CACHE_DURATION = 24 * 60 * 60 * 1000; // 6 jam
-
-app.use('/coingecko', async (req, res) => {
-  const url = `https://api.coingecko.com${req.url}`;
+app.use('/coincap', async (req, res) => {
+  const url = `https://api.coincap.io${req.url}`;
   const cacheKey = url;
   const now = Date.now();
 
-  // Serve from cache if available and not expired
   if (cache[cacheKey] && (now - cache[cacheKey].timestamp < CACHE_DURATION)) {
     const cached = cache[cacheKey];
     res.status(cached.status);
@@ -41,5 +32,4 @@ app.use('/coingecko', async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Proxy with 1 hour cache listening on port ${PORT}`));
+// ... existing code ...
