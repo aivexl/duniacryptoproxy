@@ -6,7 +6,7 @@ const app = express();
 app.use(cors());
 
 const cache = {}; // { [url]: { status, contentType, body, timestamp } }
-const CACHE_DURATION = 60 * 1000; // 1 menit
+const CACHE_DURATION = 60 * 60 * 1000; // 1 jam
 
 app.use('/coingecko', async (req, res) => {
   const url = `https://api.coingecko.com${req.url}`;
@@ -42,4 +42,4 @@ app.use('/coingecko', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Proxy with cache listening on port ${PORT}`));
+app.listen(PORT, () => console.log(`Proxy with 1 hour cache listening on port ${PORT}`));
