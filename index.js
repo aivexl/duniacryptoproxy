@@ -6,7 +6,7 @@ const app = express();
 app.use(cors());
 
 const cache = {}; // { [url]: { status, contentType, body, timestamp } }
-const CACHE_DURATION = 60 * 60 * 1000; // 1 jam
+const CACHE_DURATION = 24 * 60 * 60 * 1000; // 6 jam
 
 app.use('/coingecko', async (req, res) => {
   const url = `https://api.coingecko.com${req.url}`;
