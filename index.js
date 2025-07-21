@@ -1,30 +1,50 @@
 import express from 'express';
 import fetch from 'node-fetch';
 import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 
 const app = express();
-app.use(cors());
 
-const cache = {}; // { [url]: { status, contentType, body, timestamp } }
+// Ganti dengan domain frontend Anda
+const ALLOWED_ORIGINS = ['https://duniacrypto.vercel.app'];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+    return callback(new Error('Not allowed by CORS'));
+  },
+  methods: ['GET'],
+}));
+
+// Rate limiter: max 30 requests per IP per minute
+const limiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 30,
+  message: { error: 'Too many requests, please try again later.' }
+});
+app.use('/coingecko', limiter);
+
+const cache = {};
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 jam
 
 const COINGECKO_API_KEY = process.env.COINGECKO_API_KEY || 'CG-jrJUt1cGARECPAnb9TUeCdqE';
 
+// Validasi path agar hanya /api/v3/ yang diizinkan
+app.use('/coingecko', (req, res, next) => {
+  if (!req.url.startsWith('/api/v3/')) {
+    return res.status(400).json({ error: 'Invalid endpoint' });
+  }
+  next();
+});
+
 // Proxy CoinGecko API
 app.use('/coingecko', async (req, res) => {
   const url = `https://api.coingecko.com${req.url}`;
-  let cacheKey = url;
-
-  // Optimasi cache: endpoint global dan markets cache berdasarkan path + vs_currency saja
-  if (req.path.startsWith('/api/v3/global')) {
-    cacheKey = '/api/v3/global';
-  }
-  if (req.path.startsWith('/api/v3/coins/markets')) {
-    const urlObj = new URL(`https://api.coingecko.com${req.url}`);
-    cacheKey = `/api/v3/coins/markets?vs_currency=${urlObj.searchParams.get('vs_currency')}`;
-  }
-
+  const cacheKey = url;
   const now = Date.now();
+
   if (cache[cacheKey] && (now - cache[cacheKey].timestamp < CACHE_DURATION)) {
     const cached = cache[cacheKey];
     res.status(cached.status);
@@ -54,13 +74,14 @@ app.use('/coingecko', async (req, res) => {
     res.set('Content-Type', contentType);
     res.send(body);
   } catch (err) {
-    res.status(500).json({ error: 'Proxy error', detail: err.message });
+    // Jangan expose error detail ke user
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 // Root endpoint untuk health check
 app.get('/', (req, res) => {
-  res.json({ 
+  res.json({
     message: 'DuniaCrypto Proxy - CoinGecko API',
     endpoints: {
       '/coingecko/api/v3/simple/price': 'Get current price of cryptocurrencies',
@@ -70,9 +91,10 @@ app.get('/', (req, res) => {
       '/coingecko/ping': 'Health check'
     },
     cache: '24 hours',
-    rate_limit: '50 calls/minute (higher with API key)'
+    rate_limit: '30 calls/minute per IP',
+    cors: ALLOWED_ORIGINS
   });
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`CoinGecko Proxy with 24h cache listening on port ${PORT}`));
+app.listen(PORT, () => console.log(`CoinGecko Proxy with security, 24h cache, and rate limit on port ${PORT}`));
