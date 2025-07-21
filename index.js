@@ -8,7 +8,7 @@ app.use(cors());
 const cache = {}; // { [url]: { status, contentType, body, timestamp } }
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 jam
 
-const COINGECKO_API_KEY = process.env.COINGECKO_API_KEY || '';
+const COINGECKO_API_KEY = process.env.COINGECKO_API_KEY || 'CG-jrJUt1cGARECPAnb9TUeCdqE';
 
 // Proxy CoinGecko API
 app.use('/coingecko', async (req, res) => {
@@ -31,9 +31,7 @@ app.use('/coingecko', async (req, res) => {
     if (COINGECKO_API_KEY) {
       headers['x-cg-pro-api-key'] = COINGECKO_API_KEY;
     }
-    const response = await fetch(url, {
-      headers
-    });
+    const response = await fetch(url, { headers });
     const arrayBuffer = await response.arrayBuffer();
     const body = Buffer.from(arrayBuffer);
     const contentType = response.headers.get('content-type');
