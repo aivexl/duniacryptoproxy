@@ -34,7 +34,8 @@ app.use('/coingecko', async (req, res) => {
     const response = await fetch(url, {
       headers
     });
-    const body = await response.buffer();
+    const arrayBuffer = await response.arrayBuffer();
+    const body = Buffer.from(arrayBuffer);
     const contentType = response.headers.get('content-type');
     cache[cacheKey] = {
       status: response.status,
