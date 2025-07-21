@@ -8,6 +8,8 @@ app.use(cors());
 const cache = {}; // { [url]: { status, contentType, body, timestamp } }
 const CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 jam
 
+const COINGECKO_API_KEY = process.env.COINGECKO_API_KEY || '';
+
 // Proxy CoinGecko API
 app.use('/coingecko', async (req, res) => {
   const url = `https://api.coingecko.com${req.url}`;
@@ -22,11 +24,15 @@ app.use('/coingecko', async (req, res) => {
   }
 
   try {
+    const headers = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      'Accept': 'application/json'
+    };
+    if (COINGECKO_API_KEY) {
+      headers['x-cg-pro-api-key'] = COINGECKO_API_KEY;
+    }
     const response = await fetch(url, {
-      headers: { 
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36', 
-        'Accept': 'application/json'
-      }
+      headers
     });
     const body = await response.buffer();
     const contentType = response.headers.get('content-type');
@@ -56,7 +62,7 @@ app.get('/', (req, res) => {
       '/coingecko/ping': 'Health check'
     },
     cache: '24 hours',
-    rate_limit: '50 calls/minute'
+    rate_limit: '50 calls/minute (higher with API key)'
   });
 });
 
