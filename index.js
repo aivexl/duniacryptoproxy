@@ -13,9 +13,18 @@ const COINGECKO_API_KEY = process.env.COINGECKO_API_KEY || 'CG-jrJUt1cGARECPAnb9
 // Proxy CoinGecko API
 app.use('/coingecko', async (req, res) => {
   const url = `https://api.coingecko.com${req.url}`;
-  const cacheKey = url;
-  const now = Date.now();
+  let cacheKey = url;
 
+  // Optimasi cache: endpoint global dan markets cache berdasarkan path + vs_currency saja
+  if (req.path.startsWith('/api/v3/global')) {
+    cacheKey = '/api/v3/global';
+  }
+  if (req.path.startsWith('/api/v3/coins/markets')) {
+    const urlObj = new URL(`https://api.coingecko.com${req.url}`);
+    cacheKey = `/api/v3/coins/markets?vs_currency=${urlObj.searchParams.get('vs_currency')}`;
+  }
+
+  const now = Date.now();
   if (cache[cacheKey] && (now - cache[cacheKey].timestamp < CACHE_DURATION)) {
     const cached = cache[cacheKey];
     res.status(cached.status);
